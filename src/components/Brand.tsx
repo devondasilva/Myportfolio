@@ -4,25 +4,36 @@ import Nav from './Nav';
 import '../index.css';
 import { livrePages } from '../data/Livre'; 
 
-// Tes imports d'images
-
 const brandColor = "#8DC63F";
 
-const MagazineGallery: React.FC = () => {
-  const flipBookRef = useRef<any>(null);
-  const [currentPage, setCurrentPage] = useState(0);
+// 1. Définition des interfaces pour supprimer tout usage de 'any'
+interface PageData {
+  id: number;
+  image: string;
+  title: string;
+}
 
-  const nextBtn = () => flipBookRef.current?.pageFlip().flipNext();
-  const prevBtn = () => flipBookRef.current?.pageFlip().flipPrev();
+// Interface pour l'événement de flip (spécifique à la bibliothèque)
+interface FlipEvent {
+  data: number;
+}
+
+const Brand: React.FC = () => {
+  // 2. Typage de la Ref : On définit la structure attendue au lieu de 'any'
+  const flipBookRef = useRef<{ pageFlip: () => { flipNext: () => void; flipPrev: () => void } }>(null);
+  
+  const [currentPage, setCurrentPage] = useState<number>(0);
+
+  const nextBtn = (): void => flipBookRef.current?.pageFlip().flipNext();
+  const prevBtn = (): void => flipBookRef.current?.pageFlip().flipPrev();
 
   return (
-    <div className="min-h-screen bg-[#D8D8D8] flex flex-col items-center overflow-x-hidden">
+    <div className="min-h-screen bg-[#D8D8D8] flex flex-col items-center overflow-x-hidden selection:bg-[#8DC63F] selection:text-white">
       <Nav />
 
       {/* --- HEADER ÉDITORIAL --- */}
       <header className="w-full max-w-7xl px-6 pt-24 md:pt-32 mb-12 flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="relative">
-          {/* Badge vertical vert */}
           <div 
             className="absolute -left-6 md:-left-10 top-2 h-full w-[4px] rounded-full"
             style={{ backgroundColor: brandColor }}
@@ -47,56 +58,47 @@ const MagazineGallery: React.FC = () => {
 
       {/* --- ZONE DU LIVRE (FLIPBOOK) --- */}
       <main className="relative w-full max-w-6xl flex flex-col items-center justify-center py-10 md:py-16">
-        
-        {/* Glow de fond pour détacher le livre du gris */}
         <div className="absolute inset-0 bg-white/30 blur-[150px] rounded-full scale-75 pointer-events-none"></div>
 
         <div className="relative z-10 drop-shadow-[0_50px_80px_rgba(0,0,0,0.3)]">
-  {/* @ts-ignore */}
-  <HTMLFlipBook 
-    width={450} 
-    height={600}
-    size="stretch"
-    minWidth={300}
-    maxWidth={1000}
-    minHeight={400}
-    maxHeight={1533}
-    maxShadowOpacity={0.4}
-    showCover={true}
-    className="magazine-book"
-    ref={flipBookRef}
-    onFlip={(e) => setCurrentPage(e.data)}
-    style={{ backgroundColor: 'transparent' }}
-    /* Ajout de ces props pour aider au rendu des bords */
-    usePortrait={false}
-    startPage={0}
-    drawShadow={true}
-    flippingTime={1000}
-    useMouseEvents={true}
-  >
-    {livrePages.map((page) => (
-      /* Le secret est ici : rounded + overflow-hidden + border */
-      <div key={page.id} className="bg-white overflow-hidden rounded-r-sm md:rounded-r-md border-y border-r border-black/5 shadow-inner">
-        <div className="relative h-full w-full overflow-hidden">
-          <img 
-            src={page.image} 
-            alt={page.title} 
-            className="w-full h-full object-cover shadow-2xl"
-          />
-          
-          {/* 1. Ombre de pliure centrale réaliste */}
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-black/20 via-transparent to-transparent opacity-60"></div>
-          
-          {/* 2. Reflet brillant sur le bord extérieur (effet papier glacé) */}
-          <div className="absolute inset-y-0 right-0 w-[2px] bg-white/20 pointer-events-none"></div>
-
-          {/* 3. Masque pour arrondir les coins extérieurs du livre au complet */}
-          <div className="absolute inset-0 rounded-[1rem] md:rounded-[1.5rem] pointer-events-none border-[1px] border-black/10"></div>
+          {/* @ts-expect-error: HTMLFlipBook lacks official React 18 types but is functional */}
+          <HTMLFlipBook 
+            width={450} 
+            height={600}
+            size="stretch"
+            minWidth={300}
+            maxWidth={1000}
+            minHeight={400}
+            maxHeight={1533}
+            maxShadowOpacity={0.4}
+            showCover={true}
+            className="magazine-book"
+            ref={flipBookRef}
+            onFlip={(e: FlipEvent) => setCurrentPage(e.data)}
+            style={{ backgroundColor: 'transparent' }}
+            usePortrait={false}
+            startPage={0}
+            drawShadow={true}
+            flippingTime={1000}
+            useMouseEvents={true}
+          >
+            {/* 3. Typage explicite de 'page' pour éviter l'erreur de la ligne 18/19 */}
+            {livrePages.map((page: PageData) => (
+              <div key={page.id} className="bg-white overflow-hidden rounded-r-sm md:rounded-r-md border-y border-r border-black/5 shadow-inner">
+                <div className="relative h-full w-full overflow-hidden">
+                  <img 
+                    src={page.image} 
+                    alt={page.title} 
+                    className="w-full h-full object-cover shadow-2xl"
+                  />
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-black/20 via-transparent to-transparent opacity-60"></div>
+                  <div className="absolute inset-y-0 right-0 w-[2px] bg-white/20 pointer-events-none"></div>
+                  <div className="absolute inset-0 rounded-[1rem] md:rounded-[1.5rem] pointer-events-none border-[1px] border-black/10"></div>
+                </div>
+              </div>
+            ))}
+          </HTMLFlipBook>
         </div>
-      </div>
-    ))}
-  </HTMLFlipBook>
-</div>
 
         {/* --- CONTRÔLES DE NAVIGATION --- */}
         <div className="flex items-center justify-between w-full max-w-md mt-16 px-6 relative z-20">
@@ -127,47 +129,47 @@ const MagazineGallery: React.FC = () => {
         </div>
       </main>
 
-      {/* --- SECTION DESCRIPTION TECHNIQUE --- */}
+      {/* --- FOOTER ÉDITORIAL --- */}
       <footer className="w-full max-w-7xl px-6 py-24 grid grid-cols-1 md:grid-cols-3 gap-16 border-t border-slate-900/10">
-  <div className="md:col-span-2">
-    <h4 className="text-xs font-black uppercase tracking-[0.5em] text-slate-400 mb-6">Concept & Art Direction</h4>
-    <p className="text-2xl md:text-4xl font-black text-slate-800 leading-[1.1] tracking-tight">
-      Fusing the raw intensity of Amazonian grit with high-end editorial precision. 
-      Every page reflects the <span style={{ color: brandColor }}>vibrant energy of French Guiana</span>, 
-      where athletic power meets monumental design.
-    </p>
-  </div>
-  
-  <div className="space-y-10">
-    <div>
-      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">The Event</h4>
-      <p className="text-sm font-bold text-slate-800 uppercase tracking-tighter italic">
-        Elite Sporting Competition — French Guiana 2024
-      </p>
-    </div>
-    
-    <div className="flex flex-col gap-4">
-      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Core Services</h4>
-      <div className="flex flex-wrap gap-2">
-        {['Sports Photography', 'Visual Identity', 'Editorial Layout'].map(tag => (
-          <span key={tag} className="px-3 py-1 bg-white/50 border border-white/80 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-500">
-            {tag}
-          </span>
-        ))}
-      </div>
-    </div>
+        <div className="md:col-span-2">
+          <h4 className="text-xs font-black uppercase tracking-[0.5em] text-slate-400 mb-6 italic">Concept & Art Direction</h4>
+          <p className="text-2xl md:text-4xl font-black text-slate-800 leading-[1.1] tracking-tight">
+            Fusing the raw intensity of Amazonian grit with high-end editorial precision. 
+            Every page reflects the <span style={{ color: brandColor }}>vibrant energy of French Guiana</span>, 
+            where athletic power meets monumental design.
+          </p>
+        </div>
+        
+        <div className="space-y-10">
+          <div>
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">The Event</h4>
+            <p className="text-sm font-bold text-slate-800 uppercase tracking-tighter italic">
+              Elite Sporting Competition — French Guiana 2024
+            </p>
+          </div>
+          
+          <div className="flex flex-col gap-4">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Core Services</h4>
+            <div className="flex flex-wrap gap-2">
+              {['Sports Photography', 'Visual Identity', 'Editorial Layout'].map((tag: string) => (
+                <span key={tag} className="px-3 py-1 bg-white/50 border border-white/80 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-500">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
 
-    <div>
-      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Location</h4>
-      <div className="flex items-center gap-2">
-         <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: brandColor }}></div>
-         <p className="text-sm font-bold text-slate-800 uppercase tracking-tighter">Cayenne / Kourou, GF</p>
-      </div>
-    </div>
-  </div>
-</footer>
+          <div>
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Location</h4>
+            <div className="flex items-center gap-2">
+               <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: brandColor }}></div>
+               <p className="text-sm font-bold text-slate-800 uppercase tracking-tighter">Cayenne / Kourou, GF</p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
 
-export default MagazineGallery;
+export default Brand;
